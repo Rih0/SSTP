@@ -1,5 +1,4 @@
 import argparse
-from operator import mod
 import torch
 import torch.nn as nn
 import numpy as np
