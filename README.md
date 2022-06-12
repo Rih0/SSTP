@@ -6,5 +6,6 @@
 ## 运行(Run)
 `python main.py --dataset NYC`
 ## 环境(Env)
-```段落1
-段落2```
+dgl-cuda11.1	0.7.2
+pytorch	1.7.1
+python	3.7.11
