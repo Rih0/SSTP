@@ -57,7 +57,7 @@ def sample_function(train_poi, train_time, train_cate, usernum, poinum, catenum,
                 break
         return (user, poi, time, cate, poi_y, cate_y)
 
-    np.random.seed(SEED)    # 设置种子
+    np.random.seed(SEED)
     while True:
         one_batch = []
         for i in range(batch_size):
@@ -97,7 +97,7 @@ def TZTime2Timestamp(s):
 
 def load_dataset(dataset="NYC"):
     if dataset == "NYC" or dataset == "TKY":
-        data_file_path = "./data/" + dataset + "/3_sort_total_u10p10_" + dataset + ".txt"
+        data_file_path = "./data/" + dataset + "/" + dataset + ".txt"
     else:
         None
     
@@ -180,12 +180,10 @@ def evaluate(args, model, dataset, test_num):
             if idx == -1:
                 break
     
-
         poi_scores, cate_scores = model(*[np.array(l) for l in [[u], [poi_seqs], [tim_seqs], [cat_seqs]]])
         poi_scores = poi_scores[:, -1, :]
         poi_id = test_poi[u][0] - 1 # true test label
 
-        # compute hit
         hits, maps = [0, 0, 0, 0], [0, 0, 0, 0]
         for i, N in enumerate([1, 5, 10, 20]):
             _, topk_idx = torch.topk(poi_scores, k=N)
@@ -210,7 +208,7 @@ def evaluate(args, model, dataset, test_num):
 
     return HIT, MAP
 
-# unit : km
+# 计算两个POI之间的物理距离，单位km
 def haversine(la1, lo1, la2, lo2):
     lo1, la1, lo2, la2 = map(radians, [lo1, la1, lo2, la2])
     lo_d = lo2 - lo1
@@ -220,7 +218,7 @@ def haversine(la1, lo1, la2, lo2):
     return 6371 * c
 
 def poi_category_relation(dataset="NYC"):
-    file_path = "./data/" + dataset + "/3_sort_total_u10p10_" + dataset + ".txt"
+    file_path = "./data/" + dataset + "/" + dataset + ".txt"
     poi2cate = {}
     with open(file_path, "r", encoding="utf-8") as rf:
         for line in rf:
@@ -231,7 +229,7 @@ def poi_category_relation(dataset="NYC"):
     return poi2cate
 
 def user_social_network(dataset="NYC", simi=0.2):
-    file_path = "./data/" + dataset + "/3_sort_total_u10p10_" + dataset + ".txt"
+    file_path = "./data/" + dataset + "/" + dataset + ".txt"
     user_poi_dict = {}
     with open(file_path, "r", encoding="utf-8") as rf:
         for line in rf:
@@ -259,7 +257,7 @@ def geographical_info_build(poi_num, dataset="NYC", limit=3):
     print("build POI distance matrix...")
     t0 = time.time()
 
-    file_path = "./data/" + dataset + "/3_sort_total_u10p10_" + dataset + ".txt"
+    file_path = "./data/" + dataset + "/" + dataset + ".txt"
 
     poi_lat_lon = defaultdict(tuple)
     with open(file_path, "r", encoding="utf-8") as rf:
@@ -305,8 +303,7 @@ def geographical_info_build(poi_num, dataset="NYC", limit=3):
             nei_j_exp = np.exp(poi_distance_matrix[i, nei_j])
             
             poi_attention_coefficient[i, nei_j] = nei_j_exp / exp_dist_sum
-            if i == 0 and nei_j == 5:
-                print(poi_attention_coefficient[i, nei_j])
+         
 
     src = torch.tensor(np.array(src))
     dst = torch.tensor(np.array(dst))
