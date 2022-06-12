@@ -4,12 +4,12 @@ import torch
 import torch.nn as nn
 import numpy as np
 from utils import Sampler, evaluate, load_dataset, poi_category_relation, geographical_info_build, user_social_network
-from model import SGLSP
+from model import SSTP
 import os
 import random
 import time
 
-parser = argparse.ArgumentParser(description="Riho")
+parser = argparse.ArgumentParser(description="the code of SSTP.")
 parser.add_argument("--dataset", type=str, default="NYC", help="the input dataset.")
 parser.add_argument("--device", type=str, default="cuda", help="use GPU('cuda') or CPU('cpu').")
 parser.add_argument("--gpu", type=int, default=0, help="which GPU you want to use. use CPU please setting -1.")
@@ -59,10 +59,13 @@ def set_seed(seed):
 
 # Main funciton
 if __name__ == "__main__":
+    # 设置随机种子
     set_seed(args.seed)
+
+    # 选择运行的CUDA驱动
     os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
-    # Loading dataset
+    # 加载数据集
     dataset = load_dataset(args.dataset)
     [train_poi, valid_poi, test_poi,
      train_time, valid_time, test_time,
@@ -72,13 +75,17 @@ if __name__ == "__main__":
     print("### poi  number : {:5d} ###".format(poi_num))
     print("### cate number : {:5d} ###".format(cate_num))
     print("args : {}".format(args))
-    # build data
-    poi_adj, poi_neighbors, poi_attention_coefficient = geographical_info_build(poi_num, args.dataset, limit=args.limit)#.to(args.device)
+
+    # 构建对应数据
+    # poi_adj表示两个POI之间是否存在联系，poi_neighbors表示某个POI的所有邻居POI，poi_attention_coefficient表示POI与其邻居的距离相似度。=
+    poi_adj, poi_neighbors, poi_attention_coefficient = geographical_info_build(poi_num, args.dataset, limit=args.limit)    #.to(args.device)
+    # POI与对应类别的对应关系
     poi2cate = poi_category_relation(args.dataset)
+    # user_adj表示用户邻接图，user_poi_dict为字典形式：user_poi_dict[uid] = list(poi)，表示某一个用户的所有签到记录
     user_adj, user_poi_dict = user_social_network(args.dataset, args.sim)
     
     # Loading model
-    model = SGLSP(args, user_num, poi_num, args.time_slot, cate_num, poi_adj=poi_adj, poi2cate=poi2cate, 
+    model = SSTP(args, user_num, poi_num, args.time_slot, cate_num, poi_adj=poi_adj, poi2cate=poi2cate, 
                 user_adj=user_adj, user_poi_dict=user_poi_dict, poi_attention_coefficient=poi_attention_coefficient,
                 poi_neighbors=poi_neighbors)
     model = model.to(args.device)
@@ -107,13 +114,15 @@ if __name__ == "__main__":
     for epoch in range(1, args.epochs + 1):
         model.train()
         for step in range(num_batch):
-            
+            # 采样器取出数据
             u, poi, tim, cate, poi_y, cat_y = train_sampler.next_batch()
             u, poi, tim, cate, poi_y, cat_y = np.array(u), np.array(poi), np.array(tim), np.array(cate), np.array(poi_y), np.array(cat_y)
             
+            # 模型输出
             pred_poi, pred_cate = model(u, poi, tim, cate)
             poi_y, cate_y = torch.LongTensor(poi_y).to(args.device), torch.LongTensor(cat_y).to(args.device)
 
+            # 损失计算
             loss_poi, loss_cate = 0, 0
             for i in range(u.shape[0]):
                 loss_poi += cross_entropy_loss(pred_poi[i, :, :], poi_y[i, :])
@@ -123,6 +132,7 @@ if __name__ == "__main__":
             loss = loss_poi + args.cate_lambda * loss_cate
             # for param in model.poi_embedding.parameters(): loss += args.l2_emb * torch.norm(param)
 
+            # 反向传播
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -133,6 +143,7 @@ if __name__ == "__main__":
             model.eval()
             with torch.no_grad():
                 print("Evaluating.")
+                # 加快程序运行速度，只选择 test_num 数量的测试数据进行测试
                 if args.dataset == "NYC":
                     test_num = 183
                 else:
