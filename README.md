@@ -5,3 +5,5 @@
 `user_id  poi_id  latitude  longitude timestamp day_id  category_id UTCTime`
 ## 运行(Run)
 `python main.py --dataset NYC`
+## 环境(Env)
+```段落```
