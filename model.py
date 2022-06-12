@@ -1,8 +1,4 @@
-from ast import Pass
 from collections import defaultdict
-from pickle import FALSE
-from stat import S_ISBLK
-from tkinter import E
 import dgl
 from dgl.batch import batch
 from dgl.dataloading import dataloader
@@ -64,16 +60,16 @@ class GAT(nn.Module):
                 sub_feat = torch.mul(self.w(current_feat), beta)
                 feat_dist[i] += sub_feat
                 cnt += 1
-                if cnt == 50:
+                if cnt == 15: # 选取固定邻居数
                     break
         feat_dist = feat_dist.unsqueeze(1)
         feat_out = (feat_gat + feat_dist) / 2
         feat_out = F.relu(feat_out)
         return feat_out # (batch_size, num_heads, hidden_size) (128, 1, 200)
 
-class SGLSP(nn.Module):
+class SSTP(nn.Module):
     def __init__(self, args, user_num, poi_num, time_num, cate_num, poi_adj=None, poi2cate=None, user_adj=None, user_poi_dict=None, poi_attention_coefficient=None, poi_neighbors=None):
-        super(SGLSP, self).__init__()
+        super(SSTP, self).__init__()
 
         self.user_num = user_num        # user number
         self.poi_num = poi_num          # poi number
